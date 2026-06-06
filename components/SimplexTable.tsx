@@ -56,7 +56,7 @@ export default function SimplexTable({ iterations, foods }: SimplexTableProps) {
   const isFinalStep = activeStep === iterations.length - 1;
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-2xs overflow-hidden">
+    <div className="bg-white rounded-2xl p-6 shadow-2xs overflow-hidden border-2 border-slate-200">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 min-w-0">
         <div className="flex items-center gap-3 flex-shrink-0">
           <div>
@@ -84,7 +84,7 @@ export default function SimplexTable({ iterations, foods }: SimplexTableProps) {
 
       {/* Info Banner */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-slate-100 rounded-xl p-4 flex flex-col justify-between">
+        <div className="bg-slate-100 rounded-xl p-4 flex flex-col justify-between border-2 border-slate-250">
           <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Status Perhitungan</span>
           <span className="text-sm font-bold text-slate-850 mt-1.5">
             {isFinalStep ? (
@@ -104,7 +104,7 @@ export default function SimplexTable({ iterations, foods }: SimplexTableProps) {
           </p>
         </div>
 
-        <div className="bg-sky-100 rounded-xl p-4 flex flex-col justify-between">
+        <div className="bg-sky-100 rounded-xl p-4 flex flex-col justify-between border-2 border-sky-300">
           <span className="text-[10px] uppercase font-bold text-sky-850 tracking-wider">Variabel Masuk</span>
           <span className="text-sm font-bold text-slate-850 mt-1.5">
             {enteringVar ? (
@@ -122,7 +122,7 @@ export default function SimplexTable({ iterations, foods }: SimplexTableProps) {
           </p>
         </div>
 
-        <div className="bg-rose-100 rounded-xl p-4 flex flex-col justify-between">
+        <div className="bg-rose-100 rounded-xl p-4 flex flex-col justify-between border-2 border-rose-300">
           <span className="text-[10px] uppercase font-bold text-rose-850 tracking-wider">Variabel Keluar</span>
           <span className="text-sm font-bold text-slate-850 mt-1.5">
             {leavingVar ? (
@@ -145,7 +145,7 @@ export default function SimplexTable({ iterations, foods }: SimplexTableProps) {
       <div className="overflow-x-auto rounded-xl">
         <table className="w-full text-left border-collapse text-xs">
           <thead>
-            <tr className="bg-slate-50 border-b border-slate-200 text-slate-655 font-bold">
+            <tr className="bg-slate-50 border-b-2 border-slate-350 text-slate-655 font-bold">
               <th className="py-3 px-3 w-20 whitespace-nowrap">Basis</th>
               {headers.map((h, idx) => {
                 const isPivotCol = idx === pivotCol;
@@ -163,7 +163,7 @@ export default function SimplexTable({ iterations, foods }: SimplexTableProps) {
               <th className="py-3 px-3 text-right w-24 whitespace-nowrap">Rasio</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 text-slate-700">
+          <tbody className="divide-y-2 divide-slate-200 text-slate-700">
             {tableau.map((row, rowIdx) => {
               const isPivotRow = rowIdx === pivotRow;
               const basisVar = basis[rowIdx];
@@ -176,7 +176,7 @@ export default function SimplexTable({ iterations, foods }: SimplexTableProps) {
                   }`}
                 >
                   {/* Basis column */}
-                  <td className="py-3 px-3 font-mono font-bold text-slate-650 bg-slate-55 border-r border-slate-100 whitespace-nowrap">
+                  <td className="py-3 px-3 font-mono font-bold text-slate-650 bg-slate-55 border-r-2 border-slate-250 whitespace-nowrap">
                     {basisVar}
                   </td>
 
@@ -204,7 +204,7 @@ export default function SimplexTable({ iterations, foods }: SimplexTableProps) {
                   })}
 
                   {/* Ratio column */}
-                  <td className="py-3 px-3 text-right font-mono text-slate-500 bg-slate-50/20 border-l border-slate-100 whitespace-nowrap">
+                  <td className="py-3 px-3 text-right font-mono text-slate-500 bg-slate-50/20 border-l-2 border-slate-250 whitespace-nowrap">
                     {rowIdx === 0 ? (
                       <span className="text-slate-400">-</span>
                     ) : ratios[rowIdx - 1] !== null ? (
@@ -223,7 +223,7 @@ export default function SimplexTable({ iterations, foods }: SimplexTableProps) {
       </div>
 
       {/* Guide / Legend */}
-      <div className="mt-4 p-3 bg-slate-50 rounded-xl flex flex-wrap gap-4 text-[11px] text-slate-650 items-center justify-between font-bold">
+      <div className="mt-4 p-3 bg-slate-50 rounded-xl flex flex-wrap gap-4 text-[11px] text-slate-650 items-center justify-between font-bold border-2 border-slate-200">
         <div className="flex flex-wrap gap-3">
           <span className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded bg-sky-100"></span>
@@ -239,7 +239,7 @@ export default function SimplexTable({ iterations, foods }: SimplexTableProps) {
           </span>
         </div>
         
-        {!isFinalStep && pivotRow !== null && pivotCol !== null && (
+        {!isFinalStep && pivotRow !== null && pivotRow > 0 && pivotCol !== null && pivotCol >= 0 && (
           <div className="font-mono text-xs text-emerald-900 font-extrabold bg-emerald-100 px-2.5 py-0.5 rounded">
             OBE: B{pivotRow} = B{pivotRow} / {formatNum(tableau[pivotRow][pivotCol])}
           </div>
@@ -247,7 +247,7 @@ export default function SimplexTable({ iterations, foods }: SimplexTableProps) {
       </div>
 
       {/* Keterangan Variabel */}
-      <div className="mt-4 p-4 bg-slate-55 rounded-xl space-y-2 text-xs border border-slate-100">
+      <div className="mt-4 p-4 bg-slate-55 rounded-xl space-y-2 text-xs border-2 border-slate-300">
         <h4 className="font-extrabold text-slate-800 uppercase tracking-wider text-[10px]">Keterangan Variabel OBE:</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-slate-600">
           <div>
@@ -255,7 +255,7 @@ export default function SimplexTable({ iterations, foods }: SimplexTableProps) {
             <ul className="list-disc list-inside space-y-1.5 font-semibold pl-1">
               {foods.map((food, idx) => (
                 <li key={food.id}>
-                  <span className="font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200/65">x{idx + 1}</span>: {food.name}
+                  <span className="font-mono bg-white px-1.5 py-0.5 rounded border-2 border-slate-300">x{idx + 1}</span>: {food.name}
                 </li>
               ))}
             </ul>
@@ -264,19 +264,19 @@ export default function SimplexTable({ iterations, foods }: SimplexTableProps) {
             <div>
               <span className="font-bold text-sky-700 block mb-1">sᵢ (Surplus Variable / Kelebihan Gizi):</span>
               <div className="grid grid-cols-2 gap-2 font-semibold pl-1">
-                <div><span className="font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200/65">s1</span>: Kalori</div>
-                <div><span className="font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200/65">s2</span>: Protein</div>
-                <div><span className="font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200/65">s3</span>: Lemak</div>
-                <div><span className="font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200/65">s4</span>: Karbohidrat</div>
+                <div><span className="font-mono bg-white px-1.5 py-0.5 rounded border-2 border-slate-300">s1</span>: Kalori</div>
+                <div><span className="font-mono bg-white px-1.5 py-0.5 rounded border-2 border-slate-300">s2</span>: Protein</div>
+                <div><span className="font-mono bg-white px-1.5 py-0.5 rounded border-2 border-slate-300">s3</span>: Lemak</div>
+                <div><span className="font-mono bg-white px-1.5 py-0.5 rounded border-2 border-slate-300">s4</span>: Karbohidrat</div>
               </div>
             </div>
             <div>
               <span className="font-bold text-rose-700 block mb-1">aᵢ (Artificial Variable / Variabel Buatan Big-M):</span>
               <div className="grid grid-cols-2 gap-2 font-semibold pl-1">
-                <div><span className="font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200/65">a1</span>: Kalori</div>
-                <div><span className="font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200/65">a2</span>: Protein</div>
-                <div><span className="font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200/65">a3</span>: Lemak</div>
-                <div><span className="font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200/65">a4</span>: Karbohidrat</div>
+                <div><span className="font-mono bg-white px-1.5 py-0.5 rounded border-2 border-slate-300">a1</span>: Kalori</div>
+                <div><span className="font-mono bg-white px-1.5 py-0.5 rounded border-2 border-slate-300">a2</span>: Protein</div>
+                <div><span className="font-mono bg-white px-1.5 py-0.5 rounded border-2 border-slate-300">a3</span>: Lemak</div>
+                <div><span className="font-mono bg-white px-1.5 py-0.5 rounded border-2 border-slate-300">a4</span>: Karbohidrat</div>
               </div>
             </div>
           </div>

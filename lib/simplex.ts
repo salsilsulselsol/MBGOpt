@@ -40,51 +40,92 @@ export interface SimplexResult {
     fat: number;
     carbs: number;
   };
+  error?: string;
 }
 
 const M = 1000000; // Big-M value for penalties
 
 export function solveSimplex(foods: FoodItem[], targets: NutritionTargets): SimplexResult {
-  const numFoods = foods.length;
-  // We have 4 constraints: Calories, Protein, Fat, Carbs
+  // 1. Input Validation and Sanitization
+  if (!foods || foods.length === 0) {
+    return {
+      optimal: false,
+      infeasible: false,
+      unbounded: false,
+      iterations: [],
+      solution: {},
+      totalCost: 0,
+      nutritionMet: { calories: 0, protein: 0, fat: 0, carbs: 0 },
+      error: 'Daftar bahan makanan tidak boleh kosong.',
+    };
+  }
+
+  // Sanitize targets to be non-negative
+  const sanitizedTargets: NutritionTargets = {
+    calories: Math.max(0, targets.calories),
+    protein: Math.max(0, targets.protein),
+    fat: Math.max(0, targets.fat),
+    carbs: Math.max(0, targets.carbs),
+  };
+
+  // Sanitize foods to be non-negative
+  const sanitizedFoods = foods.map(food => ({
+    ...food,
+    calories: Math.max(0, food.calories),
+    protein: Math.max(0, food.protein),
+    fat: Math.max(0, food.fat),
+    carbs: Math.max(0, food.carbs),
+    price: Math.max(0, food.price),
+  }));
+
+  // Check if all sanitized prices are 0 while some targets are > 0
+  const allPricesZero = sanitizedFoods.every(f => f.price === 0);
+  const hasPositiveTarget = Object.values(sanitizedTargets).some(t => t > 0);
+  if (allPricesZero && hasPositiveTarget) {
+    return {
+      optimal: false,
+      infeasible: false,
+      unbounded: false,
+      iterations: [],
+      solution: {},
+      totalCost: 0,
+      nutritionMet: { calories: 0, protein: 0, fat: 0, carbs: 0 },
+      error: 'Harga semua bahan makanan tidak boleh nol jika target gizi lebih besar dari nol.',
+    };
+  }
+
+  const numFoods = sanitizedFoods.length;
   const numConstraints = 4;
 
   // Nutrient targets in order
   const targetValues = [
-    targets.calories,
-    targets.protein,
-    targets.fat,
-    targets.carbs,
+    sanitizedTargets.calories,
+    sanitizedTargets.protein,
+    sanitizedTargets.fat,
+    sanitizedTargets.carbs,
   ];
 
   const targetNames = ['Kalori', 'Protein', 'Lemak', 'Karbohidrat'];
 
   // Setup variable headers
-  // Decision variables: x1, x2, ... x_n
-  const decisionVars = foods.map((_, i) => `x${i + 1}`);
-  // Surplus variables: s1, s2, s3, s4
+  const decisionVars = sanitizedFoods.map((_, i) => `x${i + 1}`);
   const surplusVars = Array.from({ length: numConstraints }, (_, i) => `s${i + 1}`);
-  // Artificial variables: a1, a2, a3, a4
   const artificialVars = Array.from({ length: numConstraints }, (_, i) => `a${i + 1}`);
 
   const headers = [...decisionVars, ...surplusVars, ...artificialVars, 'RHS'];
 
-  // Tableau size: (numConstraints + 1) rows, (numFoods + 2 * numConstraints + 1) columns
-  // Row 0 is the objective function row (Maximize W = -Z = -sum(c_j * x_j) - M * sum(a_i))
-  // Row 1 to 4 are constraint rows
   const numCols = numFoods + 2 * numConstraints + 1;
   const numRows = numConstraints + 1;
 
   const tableau: number[][] = Array.from({ length: numRows }, () => Array(numCols).fill(0));
   const basis: string[] = Array(numRows).fill('');
-  basis[0] = 'W'; // Objective row label
+  basis[0] = 'W';
 
   // Fill constraint rows (Row 1 to m)
   for (let i = 0; i < numConstraints; i++) {
     const rowIdx = i + 1;
-    // Set coefficients for decision variables
     for (let j = 0; j < numFoods; j++) {
-      const food = foods[j];
+      const food = sanitizedFoods[j];
       let val = 0;
       if (i === 0) val = food.calories;
       else if (i === 1) val = food.protein;
@@ -93,23 +134,15 @@ export function solveSimplex(foods: FoodItem[], targets: NutritionTargets): Simp
       tableau[rowIdx][j] = val;
     }
 
-    // Set coefficient for surplus variable s_i
     tableau[rowIdx][numFoods + i] = -1;
-
-    // Set coefficient for artificial variable a_i
     tableau[rowIdx][numFoods + numConstraints + i] = 1;
-
-    // Set RHS
     tableau[rowIdx][numCols - 1] = targetValues[i];
-
-    // Set initial basis for this row to artificial variable a_i
     basis[rowIdx] = artificialVars[i];
   }
 
-  // Fill Row 0: W + sum(c_j * x_j) + M * sum(a_i) = 0
-  // Initially, coeff for x_j is c_j, for s_k is 0, for a_k is M
+  // Fill Row 0
   for (let j = 0; j < numFoods; j++) {
-    tableau[0][j] = foods[j].price;
+    tableau[0][j] = sanitizedFoods[j].price;
   }
   for (let i = 0; i < numConstraints; i++) {
     tableau[0][numFoods + numConstraints + i] = M;
@@ -117,7 +150,6 @@ export function solveSimplex(foods: FoodItem[], targets: NutritionTargets): Simp
   tableau[0][numCols - 1] = 0;
 
   // Eliminate artificial variables from Row 0
-  // For each row i: Row 0 = Row 0 - M * Row i
   for (let i = 0; i < numConstraints; i++) {
     const rowIdx = i + 1;
     for (let col = 0; col < numCols; col++) {
@@ -130,15 +162,15 @@ export function solveSimplex(foods: FoodItem[], targets: NutritionTargets): Simp
   let currentBasis = [...basis];
 
   let iterationCount = 0;
-  const maxIterations = 50;
+  const maxIterations = 100;
   let optimal = false;
   let unbounded = false;
+  let useBlandsRule = false;
+  const visitedBases = new Set<string>();
 
-  // Helper to deep copy tableau
   const cloneTableau = (t: number[][]) => t.map(row => [...row]);
 
   while (iterationCount < maxIterations) {
-    // Save current state as iteration start
     const iter: SimplexIteration = {
       iterationIndex: iterationCount,
       tableau: cloneTableau(currentTableau),
@@ -151,19 +183,35 @@ export function solveSimplex(foods: FoodItem[], targets: NutritionTargets): Simp
       ratios: Array(numConstraints).fill(null),
     };
 
-    // 1. Find Entering Variable (Pivot Column)
-    // Most negative coefficient in Row 0 (excluding RHS)
-    let pivotCol = -1;
-    let minVal = -1e-9; // Tolerance
+    // Cycle detection: track set of basic variables
+    const basisKey = currentBasis.slice(1).sort().join(',');
+    if (visitedBases.has(basisKey)) {
+      useBlandsRule = true; // Switch to Bland's rule to break cycling
+    }
+    visitedBases.add(basisKey);
 
-    for (let col = 0; col < numCols - 1; col++) {
-      if (currentTableau[0][col] < minVal) {
-        minVal = currentTableau[0][col];
-        pivotCol = col;
+    // 1. Find Entering Variable (Pivot Column)
+    let pivotCol = -1;
+
+    if (useBlandsRule) {
+      // Bland's Rule: Choose the first column with negative coefficient
+      for (let col = 0; col < numCols - 1; col++) {
+        if (currentTableau[0][col] < -1e-9) {
+          pivotCol = col;
+          break;
+        }
+      }
+    } else {
+      // Dantzig's Rule: Choose the most negative coefficient
+      let minVal = -1e-9;
+      for (let col = 0; col < numCols - 1; col++) {
+        if (currentTableau[0][col] < minVal) {
+          minVal = currentTableau[0][col];
+          pivotCol = col;
+        }
       }
     }
 
-    // If no negative coefficient, we have reached optimal
     if (pivotCol === -1) {
       optimal = true;
       iterations.push(iter);
@@ -186,12 +234,32 @@ export function solveSimplex(foods: FoodItem[], targets: NutritionTargets): Simp
         const ratio = rhs / val;
         ratios[i] = ratio;
 
-        if (ratio < minRatio) {
-          minRatio = ratio;
-          pivotRow = rowIdx;
+        if (useBlandsRule) {
+          if (Math.abs(ratio - minRatio) < 1e-9) {
+            // Bland's Rule tie-breaking: Choose the basic variable with the lowest index in headers
+            if (pivotRow === -1) {
+              minRatio = ratio;
+              pivotRow = rowIdx;
+            } else {
+              const currentVar = currentBasis[rowIdx];
+              const minRatioVar = currentBasis[pivotRow];
+              if (headers.indexOf(currentVar) < headers.indexOf(minRatioVar)) {
+                minRatio = ratio;
+                pivotRow = rowIdx;
+              }
+            }
+          } else if (ratio < minRatio) {
+            minRatio = ratio;
+            pivotRow = rowIdx;
+          }
+        } else {
+          if (ratio < minRatio) {
+            minRatio = ratio;
+            pivotRow = rowIdx;
+          }
         }
       } else {
-        ratios[i] = null; // Can't divide or negative
+        ratios[i] = null;
       }
     }
 
@@ -207,18 +275,15 @@ export function solveSimplex(foods: FoodItem[], targets: NutritionTargets): Simp
     iter.pivotRow = pivotRow;
     iter.leavingVar = currentBasis[pivotRow];
 
-    // Push iteration state before performing row operations
     iterations.push(iter);
 
     // 3. Perform Row Operations (OBE)
     const pivotVal = currentTableau[pivotRow][pivotCol];
     
-    // Normalize pivot row
     for (let col = 0; col < numCols; col++) {
       currentTableau[pivotRow][col] /= pivotVal;
     }
 
-    // Eliminate pivot column from other rows
     for (let r = 0; r < numRows; r++) {
       if (r !== pivotRow) {
         const factor = currentTableau[r][pivotCol];
@@ -228,7 +293,6 @@ export function solveSimplex(foods: FoodItem[], targets: NutritionTargets): Simp
       }
     }
 
-    // Update basis
     currentBasis[pivotRow] = headers[pivotCol];
     iterationCount++;
   }
@@ -236,14 +300,12 @@ export function solveSimplex(foods: FoodItem[], targets: NutritionTargets): Simp
   // Calculate final solution values
   const solution: Record<string, number> = {};
   
-  // Set all to 0 initially
   headers.forEach(h => {
     if (h !== 'RHS') {
       solution[h] = 0;
     }
   });
 
-  // Read basis values
   for (let r = 1; r < numRows; r++) {
     const varName = currentBasis[r];
     const val = currentTableau[r][numCols - 1];
@@ -267,7 +329,7 @@ export function solveSimplex(foods: FoodItem[], targets: NutritionTargets): Simp
     carbs: 0,
   };
 
-  foods.forEach((food, idx) => {
+  sanitizedFoods.forEach((food, idx) => {
     const portion = solution[`x${idx + 1}`] || 0;
     totalCost += portion * food.price;
     nutritionMet.calories += portion * food.calories;
@@ -276,8 +338,13 @@ export function solveSimplex(foods: FoodItem[], targets: NutritionTargets): Simp
     nutritionMet.carbs += portion * food.carbs;
   });
 
+  let solverError: string | undefined = undefined;
+  if (iterationCount >= maxIterations && !optimal && !unbounded) {
+    solverError = 'Batas maksimum iterasi tercapai. Kemungkinan masalah tidak memiliki solusi stabil atau terjadi pengulangan basis (cycling).';
+  }
+
   return {
-    optimal: optimal && !infeasible,
+    optimal: optimal && !infeasible && !unbounded && !solverError,
     infeasible,
     unbounded,
     iterations,
@@ -289,5 +356,6 @@ export function solveSimplex(foods: FoodItem[], targets: NutritionTargets): Simp
       fat: Math.round(nutritionMet.fat * 100) / 100,
       carbs: Math.round(nutritionMet.carbs * 100) / 100,
     },
+    error: solverError,
   };
 }

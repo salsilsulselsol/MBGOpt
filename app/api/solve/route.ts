@@ -22,6 +22,13 @@ export async function POST(request: Request) {
 
     const result = solveSimplex(foods, targets);
 
+    if (result.error) {
+      return NextResponse.json(
+        { error: result.error },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(result);
   } catch (error: any) {
     return NextResponse.json(

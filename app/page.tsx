@@ -31,9 +31,31 @@ export default function Home() {
   const [loading, setLoading] = useState<boolean>(false);
   const [hasOptimized, setHasOptimized] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [portionType, setPortionType] = useState<'single' | 'batch'>('single');
+  const [batchSize, setBatchSize] = useState<number>(60);
 
   const rightPanelRef = useRef<HTMLDivElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
+
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = (e: Event) => {
+      const target = e.target;
+      if (!target) return;
+      if (target === document || target === document.documentElement || target === document.body) {
+        setIsCollapsed(window.scrollY > 50);
+      } else {
+        const element = target as HTMLElement;
+        if (element.scrollTop !== undefined) {
+          setIsCollapsed(element.scrollTop > 50);
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { capture: true });
+    return () => window.removeEventListener('scroll', handleScroll, { capture: true });
+  }, []);
 
   // Auto-scroll/adjust panel scroll when result is ready and loading is complete
   useEffect(() => {
@@ -71,8 +93,16 @@ export default function Home() {
   };
 
   const handleReset = () => {
-    setFoods(DEFAULT_FOODS);
-    setTargets(DEFAULT_TARGETS);
+    setFoods([]);
+    setTargets({
+      calories: 0,
+      protein: 0,
+      fat: 0,
+      carbs: 0,
+    });
+    setMaxBudget(0);
+    setPortionType('single');
+    setBatchSize(60);
     setResult(null);
     setHasOptimized(false);
     setError(null);
@@ -98,8 +128,13 @@ export default function Home() {
       }
 
       const data = (await response.json()) as SimplexResult;
-      setResult(data);
-      setHasOptimized(true);
+      if (data.error) {
+        setError(data.error);
+        setHasOptimized(false);
+      } else {
+        setResult(data);
+        setHasOptimized(true);
+      }
     } catch (err: any) {
       setError(err?.message || 'Terjadi kesalahan tidak terduga.');
     } finally {
@@ -112,40 +147,29 @@ export default function Home() {
   return (
     <div className="bg-[#f1f5f9] text-slate-800 lg:h-screen lg:overflow-hidden flex flex-col font-sans selection:bg-indigo-100 selection:text-indigo-900">
       
-      {/* Navbar Header */}
-      <header className="border-b border-slate-200 bg-white sticky top-0 z-45 shadow-2xs">
-        <div className="w-full px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="flex items-center justify-center w-8.5 h-8.5 rounded-lg bg-indigo-600 text-white font-black text-base shadow-xs">
-              M
-            </span>
-            <div>
-              <h1 className="text-sm font-black text-slate-800 leading-none tracking-tight">MBG Optimizer</h1>
-              <span className="text-[9px] text-slate-400 font-bold tracking-wider uppercase">Metode Simpleks Big-M</span>
-            </div>
+      {/* Dynamic Header / Landing Hero */}
+      <header className={`sticky top-0 z-50 bg-gradient-to-r from-indigo-700 via-indigo-850 to-indigo-950 text-white transition-all duration-500 ease-in-out shadow-md border-b-2 border-indigo-900 flex items-center ${
+        isCollapsed ? 'py-3.5 px-6' : 'py-10 px-6 sm:px-10'
+      }`}>
+        <div className="w-full flex flex-col justify-center">
+          <div className="flex items-center">
+            <h1 className={`font-black tracking-tight text-white transition-all duration-500 leading-none ${
+              isCollapsed ? 'text-sm' : 'text-2xl sm:text-3xl'
+            }`}>
+              MBG Optimizer
+            </h1>
+            {isCollapsed && (
+              <span className="text-[10px] text-indigo-200 font-extrabold tracking-wider uppercase ml-3 border-l border-indigo-600 pl-3 animate-in fade-in duration-300">
+                Metode Simpleks Big-M
+              </span>
+            )}
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleReset}
-              className="text-xs font-bold text-slate-500 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 border border-slate-250 rounded-lg px-3.5 py-2 transition cursor-pointer"
-            >
-              Reset Data
-            </button>
-            <button
-              onClick={handleOptimize}
-              disabled={loading}
-              className="text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 rounded-lg px-4.5 py-2 shadow-xs transition active:scale-97 cursor-pointer flex items-center gap-1.5"
-            >
-              {loading ? (
-                <>
-                  <span className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin"></span>
-                  Sedang Menghitung...
-                </>
-              ) : (
-                "Optimalkan Menu"
-              )}
-            </button>
-          </div>
+          
+          {!isCollapsed && (
+            <p className="text-indigo-150 text-xs sm:text-sm mt-2 max-w-3xl leading-relaxed animate-in fade-in slide-in-from-top-1 duration-300 font-semibold">
+              Aplikasi ini membantu menentukan kombinasi bahan makanan dengan biaya seminimal mungkin namun tetap memenuhi seluruh kebutuhan gizi minimum yang dipersyaratkan.
+            </p>
+          )}
         </div>
       </header>
 
@@ -158,16 +182,6 @@ export default function Home() {
             ? 'w-full lg:w-[40%]' 
             : 'w-full'
         }`}>
-          
-          {/* Simple Page Header / Hero */}
-          <section className="space-y-2 py-2">
-            <h2 className="text-xl font-black text-slate-800 tracking-tight leading-tight">
-              Optimasi Menu Makan Bergizi Gratis (MBG)
-            </h2>
-            <p className="text-slate-500 text-xs leading-relaxed">
-              Aplikasi ini membantu menentukan kombinasi bahan makanan dengan biaya seminimal mungkin namun tetap memenuhi seluruh kebutuhan gizi minimum yang dipersyaratkan.
-            </p>
-          </section>
 
           {/* Configuration Input */}
           <div className="space-y-6">
@@ -177,6 +191,10 @@ export default function Home() {
               onChange={setTargets}
               maxBudget={maxBudget}
               onBudgetChange={setMaxBudget}
+              portionType={portionType}
+              onPortionTypeChange={setPortionType}
+              batchSize={batchSize}
+              onBatchSizeChange={setBatchSize}
             />
 
             {/* Food Manager Table Section */}
@@ -188,22 +206,30 @@ export default function Home() {
             />
           </div>
 
-          {/* Optimization Button Panel */}
-          <div className="flex flex-col gap-2 pt-2">
-            <button
-              onClick={handleOptimize}
-              disabled={loading}
-              className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-extrabold rounded-xl shadow-xs transition active:scale-97 cursor-pointer flex items-center justify-center gap-2 text-xs"
-            >
-              {loading ? (
-                <>
-                  <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></span>
-                  Sedang Menghitung Solusi...
-                </>
-              ) : (
-                "Mulai Optimasi Menu"
-              )}
-            </button>
+          {/* Optimization & Action Button Panel */}
+          <div className="flex flex-col gap-3 pt-2">
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={handleReset}
+                className="flex-1 py-3.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-650 font-black rounded-xl shadow-xs transition active:scale-97 cursor-pointer text-center text-xs"
+              >
+                Reset Data
+              </button>
+              <button
+                onClick={handleOptimize}
+                disabled={loading}
+                className="flex-[2.5] py-3.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-black rounded-xl shadow-xs transition active:scale-97 cursor-pointer flex items-center justify-center gap-2 text-xs"
+              >
+                {loading ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></span>
+                    Sedang Menghitung...
+                  </>
+                ) : (
+                  "Mulai Optimasi Menu"
+                )}
+              </button>
+            </div>
             <span className="text-[9.5px] text-slate-400 font-bold text-center">
               Solusi optimal dihitung otomatis menggunakan Metode Simpleks Big-M
             </span>
@@ -227,7 +253,15 @@ export default function Home() {
           {/* Loading placeholder block (while executing optimization) */}
           {loading && (
             <div className="animate-pulse">
-              <ResultCard result={null} foods={foods} targets={targets} loading={true} maxBudget={maxBudget} />
+              <ResultCard 
+                result={null} 
+                foods={foods} 
+                targets={targets} 
+                loading={true} 
+                maxBudget={maxBudget} 
+                portionType={portionType}
+                batchSize={batchSize}
+              />
             </div>
           )}
 
@@ -245,7 +279,15 @@ export default function Home() {
           {hasOptimized && result && !loading && (
             <div className="space-y-6" ref={resultRef}>
               {/* Results Overview */}
-              <ResultCard result={result} foods={foods} targets={targets} loading={false} maxBudget={maxBudget} />
+              <ResultCard 
+                result={result} 
+                foods={foods} 
+                targets={targets} 
+                loading={false} 
+                maxBudget={maxBudget} 
+                portionType={portionType}
+                batchSize={batchSize}
+              />
 
               {/* Simplex Iterations step breakdown */}
               {result.iterations && result.iterations.length > 0 && (

@@ -68,7 +68,7 @@ export default function FoodTable({ foods, onAdd, onEdit, onDelete }: FoodTableP
   };
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-2xs space-y-6">
+    <div className="bg-white rounded-2xl p-6 shadow-2xs space-y-6 border-2 border-slate-200">
       {/* Table Section */}
       <div>
         <div className="flex items-center justify-between mb-6">
@@ -84,11 +84,12 @@ export default function FoodTable({ foods, onAdd, onEdit, onDelete }: FoodTableP
           </button>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full min-w-[650px] text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-slate-200/60 text-slate-800 font-extrabold bg-slate-50/80">
-                <th className="py-2.5 px-3 rounded-l-lg">Bahan Makanan</th>
+              <tr className="border-b-2 border-slate-350 text-slate-800 font-extrabold bg-slate-50/80">
+                <th className="py-2.5 px-3 rounded-l-lg w-16">Variabel</th>
+                <th className="py-2.5 px-3">Bahan Makanan</th>
                 <th className="py-2.5 px-2 text-right">Kalori (kkal)</th>
                 <th className="py-2.5 px-2 text-right">Protein (g)</th>
                 <th className="py-2.5 px-2 text-right">Lemak (g)</th>
@@ -97,12 +98,15 @@ export default function FoodTable({ foods, onAdd, onEdit, onDelete }: FoodTableP
                 <th className="py-2.5 px-3 text-center w-24 rounded-r-lg">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-700">
+            <tbody className="divide-y-2 divide-slate-200 text-slate-700">
               {foods.map((food, idx) => {
                 const isEditing = editingId === food.id;
 
                 return (
                   <tr key={food.id} className="hover:bg-slate-50/50 transition duration-100">
+                    <td className="py-3 px-3 font-mono text-xs font-bold text-indigo-750">
+                      x{idx + 1}
+                    </td>
                     <td className="py-3 px-3 font-medium text-slate-900">
                       {isEditing ? (
                         <input
@@ -112,12 +116,7 @@ export default function FoodTable({ foods, onAdd, onEdit, onDelete }: FoodTableP
                           className="bg-white border border-slate-300 rounded px-2.5 py-1 text-slate-900 w-36 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-semibold"
                         />
                       ) : (
-                        <div className="flex items-center gap-2">
-                          <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-indigo-900 bg-indigo-100 rounded-md">
-                            x{idx + 1}
-                          </span>
-                          <span className="font-semibold text-xs text-slate-800">{food.name}</span>
-                        </div>
+                        <span className="font-semibold text-xs text-slate-800">{food.name}</span>
                       )}
                     </td>
                     <td className="py-3 px-2 text-right text-xs font-mono">
@@ -234,13 +233,158 @@ export default function FoodTable({ foods, onAdd, onEdit, onDelete }: FoodTableP
             </tbody>
           </table>
         </div>
+
+        {/* Mobile View Cards */}
+        <div className="block md:hidden space-y-4">
+          {foods.map((food, idx) => {
+            const isEditing = editingId === food.id;
+
+            return (
+              <div key={food.id} className="border-2 border-slate-300 rounded-xl p-4 bg-slate-50/50 space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b-2 border-slate-250">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-black text-indigo-700 bg-indigo-50 border border-indigo-150 rounded-md">
+                      x{idx + 1}
+                    </span>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={editForm.name || ''}
+                        onChange={e => handleEditChange('name', e.target.value)}
+                        className="bg-white border border-slate-350 rounded px-2 py-0.5 text-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    ) : (
+                      <span className="font-bold text-xs text-slate-800">{food.name}</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {isEditing ? (
+                      <>
+                        <button
+                          onClick={saveEdit}
+                          className="p-1 bg-emerald-600 text-white rounded-md transition cursor-pointer"
+                          title="Simpan"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => setEditingId(null)}
+                          className="p-1 bg-slate-200 text-slate-700 rounded-md transition cursor-pointer"
+                          title="Batal"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => startEditing(food)}
+                          className="p-1 bg-slate-100 hover:bg-slate-200 text-slate-650 rounded-lg transition cursor-pointer"
+                          title="Edit"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => onDelete(food.id)}
+                          className="p-1 bg-slate-100 hover:bg-rose-50 text-slate-655 hover:text-rose-600 rounded-lg transition cursor-pointer"
+                          title="Hapus"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2 text-[10px] font-bold text-slate-500">
+                  <div className="bg-slate-100/50 p-2 rounded-lg flex flex-col justify-between">
+                    <span>Kalori</span>
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        value={editForm.calories ?? 0}
+                        onChange={e => handleEditChange('calories', e.target.value)}
+                        className="bg-white border border-slate-350 rounded mt-1 p-0.5 text-right w-full font-bold text-slate-900 text-xs"
+                      />
+                    ) : (
+                      <span className="font-mono text-slate-800 font-extrabold mt-1 text-xs">{food.calories} kkal</span>
+                    )}
+                  </div>
+                  <div className="bg-slate-100/50 p-2 rounded-lg flex flex-col justify-between">
+                    <span>Protein</span>
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        step="any"
+                        value={editForm.protein ?? 0}
+                        onChange={e => handleEditChange('protein', e.target.value)}
+                        className="bg-white border border-slate-350 rounded mt-1 p-0.5 text-right w-full font-bold text-slate-900 text-xs"
+                      />
+                    ) : (
+                      <span className="font-mono text-slate-800 font-extrabold mt-1 text-xs">{food.protein} g</span>
+                    )}
+                  </div>
+                  <div className="bg-slate-100/50 p-2 rounded-lg flex flex-col justify-between">
+                    <span>Lemak</span>
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        step="any"
+                        value={editForm.fat ?? 0}
+                        onChange={e => handleEditChange('fat', e.target.value)}
+                        className="bg-white border border-slate-350 rounded mt-1 p-0.5 text-right w-full font-bold text-slate-900 text-xs"
+                      />
+                    ) : (
+                      <span className="font-mono text-slate-800 font-extrabold mt-1 text-xs">{food.fat} g</span>
+                    )}
+                  </div>
+                  <div className="bg-slate-100/50 p-2 rounded-lg flex flex-col justify-between">
+                    <span>Karbohidrat</span>
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        step="any"
+                        value={editForm.carbs ?? 0}
+                        onChange={e => handleEditChange('carbs', e.target.value)}
+                        className="bg-white border border-slate-350 rounded mt-1 p-0.5 text-right w-full font-bold text-slate-900 text-xs"
+                      />
+                    ) : (
+                      <span className="font-mono text-slate-800 font-extrabold mt-1 text-xs">{food.carbs} g</span>
+                    )}
+                  </div>
+                  <div className="bg-indigo-50/50 p-2 rounded-lg flex flex-col justify-between col-span-2">
+                    <span className="text-indigo-800">Harga</span>
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        value={editForm.price ?? 0}
+                        onChange={e => handleEditChange('price', e.target.value)}
+                        className="bg-white border border-slate-350 rounded mt-1 p-0.5 text-right w-full font-bold text-slate-900 text-xs"
+                      />
+                    ) : (
+                      <span className="font-mono text-indigo-950 font-black mt-1 text-xs">Rp {food.price.toLocaleString('id-ID')}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
         
         {foods.length === 0 && (
           <div className="text-center py-10 text-slate-400 text-xs flex flex-col items-center justify-center gap-3">
             <p className="font-semibold">Belum ada bahan makanan dalam daftar.</p>
             <button
               onClick={() => setIsModalOpen(true)}
-              className="text-xs font-extrabold text-indigo-650 bg-indigo-50 hover:bg-indigo-100 rounded-lg px-4 py-2 transition cursor-pointer"
+              className="text-xs font-extrabold text-white bg-indigo-600 hover:bg-indigo-550 rounded-lg px-4 py-2 shadow-sm transition active:scale-97 cursor-pointer"
             >
               Tambah Bahan Makanan Pertama
             </button>
