@@ -45,7 +45,11 @@ export interface SimplexResult {
 
 const M = 1000000; // Big-M value for penalties
 
-export function solveSimplex(foods: FoodItem[], targets: NutritionTargets): SimplexResult {
+export function solveSimplex(
+  foods: FoodItem[],
+  targets: NutritionTargets,
+  maxBudget?: number
+): SimplexResult {
   // 1. Input Validation and Sanitization
   if (!foods || foods.length === 0) {
     return {
@@ -78,6 +82,9 @@ export function solveSimplex(foods: FoodItem[], targets: NutritionTargets): Simp
     price: Math.max(0, food.price),
   }));
 
+  // Budget is an optional <= constraint; 0 / empty / negative means "no budget limit"
+  const sanitizedMaxBudget = maxBudget && maxBudget > 0 ? maxBudget : 0;
+
   // Check if all sanitized prices are 0 while some targets are > 0
   const allPricesZero = sanitizedFoods.every(f => f.price === 0);
   const hasPositiveTarget = Object.values(sanitizedTargets).some(t => t > 0);
@@ -95,9 +102,11 @@ export function solveSimplex(foods: FoodItem[], targets: NutritionTargets): Simp
   }
 
   const numFoods = sanitizedFoods.length;
-  const numConstraints = 4;
+  const numGizi = 4; // calories, protein, fat, carbs — all >= constraints
+  const hasBudget = sanitizedMaxBudget > 0; // optional <= constraint
+  const numConstraints = numGizi + (hasBudget ? 1 : 0);
 
-  // Nutrient targets in order
+  // Nutrient targets in order (gizi >= constraints)
   const targetValues = [
     sanitizedTargets.calories,
     sanitizedTargets.protein,
@@ -105,24 +114,28 @@ export function solveSimplex(foods: FoodItem[], targets: NutritionTargets): Simp
     sanitizedTargets.carbs,
   ];
 
-  const targetNames = ['Kalori', 'Protein', 'Lemak', 'Karbohidrat'];
-
-  // Setup variable headers
+  // Setup variable headers: x (decision) | s1..s4 (surplus) | sB (budget slack) | a1..a4 (artificial)
   const decisionVars = sanitizedFoods.map((_, i) => `x${i + 1}`);
-  const surplusVars = Array.from({ length: numConstraints }, (_, i) => `s${i + 1}`);
-  const artificialVars = Array.from({ length: numConstraints }, (_, i) => `a${i + 1}`);
+  const surplusVars = Array.from({ length: numGizi }, (_, i) => `s${i + 1}`);
+  const budgetSlackVars = hasBudget ? ['sB'] : [];
+  const artificialVars = Array.from({ length: numGizi }, (_, i) => `a${i + 1}`);
 
-  const headers = [...decisionVars, ...surplusVars, ...artificialVars, 'RHS'];
+  const headers = [...decisionVars, ...surplusVars, ...budgetSlackVars, ...artificialVars, 'RHS'];
 
-  const numCols = numFoods + 2 * numConstraints + 1;
+  // Column index map
+  const surplusStart = numFoods; // s1..s4
+  const slackCol = numFoods + numGizi; // sB (only valid when hasBudget)
+  const artificialStart = numFoods + numGizi + (hasBudget ? 1 : 0); // a1..a4
+  const numCols = artificialStart + numGizi + 1; // + RHS
+  const rhsCol = numCols - 1;
   const numRows = numConstraints + 1;
 
   const tableau: number[][] = Array.from({ length: numRows }, () => Array(numCols).fill(0));
   const basis: string[] = Array(numRows).fill('');
   basis[0] = 'W';
 
-  // Fill constraint rows (Row 1 to m)
-  for (let i = 0; i < numConstraints; i++) {
+  // Fill gizi constraint rows (>=): a_i·x − s_i + a_i = target
+  for (let i = 0; i < numGizi; i++) {
     const rowIdx = i + 1;
     for (let j = 0; j < numFoods; j++) {
       const food = sanitizedFoods[j];
@@ -134,23 +147,34 @@ export function solveSimplex(foods: FoodItem[], targets: NutritionTargets): Simp
       tableau[rowIdx][j] = val;
     }
 
-    tableau[rowIdx][numFoods + i] = -1;
-    tableau[rowIdx][numFoods + numConstraints + i] = 1;
-    tableau[rowIdx][numCols - 1] = targetValues[i];
+    tableau[rowIdx][surplusStart + i] = -1;
+    tableau[rowIdx][artificialStart + i] = 1;
+    tableau[rowIdx][rhsCol] = targetValues[i];
     basis[rowIdx] = artificialVars[i];
   }
 
-  // Fill Row 0
+  // Optional budget constraint (<=): sum(price·x) + sB = maxBudget. Slack is the initial basis (no artificial needed).
+  if (hasBudget) {
+    const rowIdx = numGizi + 1;
+    for (let j = 0; j < numFoods; j++) {
+      tableau[rowIdx][j] = sanitizedFoods[j].price;
+    }
+    tableau[rowIdx][slackCol] = 1;
+    tableau[rowIdx][rhsCol] = sanitizedMaxBudget;
+    basis[rowIdx] = 'sB';
+  }
+
+  // Fill Row 0 (minimize cost + Big-M penalty on artificials)
   for (let j = 0; j < numFoods; j++) {
     tableau[0][j] = sanitizedFoods[j].price;
   }
-  for (let i = 0; i < numConstraints; i++) {
-    tableau[0][numFoods + numConstraints + i] = M;
+  for (let i = 0; i < numGizi; i++) {
+    tableau[0][artificialStart + i] = M;
   }
-  tableau[0][numCols - 1] = 0;
+  tableau[0][rhsCol] = 0;
 
-  // Eliminate artificial variables from Row 0
-  for (let i = 0; i < numConstraints; i++) {
+  // Eliminate artificial variables from Row 0 (only the >= gizi rows carry artificials)
+  for (let i = 0; i < numGizi; i++) {
     const rowIdx = i + 1;
     for (let col = 0; col < numCols; col++) {
       tableau[0][col] -= M * tableau[rowIdx][col];

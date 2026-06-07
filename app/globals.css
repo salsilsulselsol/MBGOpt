@@ -1,15 +1,37 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f1f5f9;
-  --foreground: #0f172a;
+  --background: #fbfaf7; /* warm paper white */
+  --foreground: #1a1a1a; /* ink */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans), Arial, sans-serif;
-  --font-mono: var(--font-geist-mono), monospace;
+  --font-sans: var(--font-jakarta), system-ui, sans-serif;
+  --font-mono: var(--font-jb-mono), ui-monospace, monospace;
+}
+
+/* Civic / merah-putih design tokens (semantic colors) */
+@theme {
+  --color-paper: #fbfaf7;
+  --color-surface: #ffffff;
+  --color-ink: #1a1a1a;
+  --color-muted: #57534e;
+  --color-faint: #8a857c;
+  --color-line: #e6e3dc;
+  --color-line-strong: #d6d2c8;
+  --color-fill: #f4f2ec;
+
+  --color-brand: #c8102e;
+  --color-brand-dark: #a20d24;
+  --color-brand-soft: #fbeaec;
+
+  --color-gold: #9a6b16;
+  --color-gold-soft: #fbf1da;
+
+  --color-good: #15803d;
+  --color-good-soft: #e7f4ec;
 }
 
 body {
@@ -21,8 +43,8 @@ body {
 
 /* Slim scrollbars for independent dashboard panes */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
 }
 
 ::-webkit-scrollbar-track {
@@ -30,12 +52,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: #d6d2c8;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: #b3ada1;
 }
 
 /* Hide number input spinners globally */
@@ -49,3 +71,39 @@ input[type="number"] {
   appearance: textfield;
 }
 
+/* Range slider — civic styling for the sensitivity panel */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--color-line-strong);
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: var(--color-brand);
+  border: 3px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: var(--color-brand);
+  border: 3px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
