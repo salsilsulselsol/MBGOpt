@@ -8,27 +8,25 @@ import ResultCard from '@/components/ResultCard';
 import SimplexTable from '@/components/SimplexTable';
 
 const DEFAULT_FOODS: FoodItem[] = [
-  { id: '1', name: 'Nasi Putih (100g)', calories: 130, protein: 2.7, fat: 0.3, carbs: 28.2, price: 1500 },
-  { id: '2', name: 'Ayam Goreng (50g)', calories: 130, protein: 12.0, fat: 7.5, carbs: 0.5, price: 5000 },
-  { id: '3', name: 'Telur Rebus (1 btr)', calories: 77, protein: 6.3, fat: 5.3, carbs: 0.6, price: 2000 },
-  { id: '4', name: 'Tahu Goreng (50g)', calories: 76, protein: 5.5, fat: 4.8, carbs: 1.9, price: 1000 },
-  { id: '5', name: 'Tempe Goreng (50g)', calories: 99, protein: 9.4, fat: 4.0, carbs: 8.5, price: 1200 },
-  { id: '6', name: 'Sayur Sop (100g)', calories: 45, protein: 1.5, fat: 1.0, carbs: 8.0, price: 1500 },
-  { id: '7', name: 'Pisang Ambon (1 bh)', calories: 92, protein: 1.2, fat: 0.2, carbs: 22.4, price: 2000 },
-  { id: '8', name: 'Susu UHT (200ml)', calories: 120, protein: 6.0, fat: 6.0, carbs: 9.0, price: 3000 },
+  { id: '1', name: 'Nasi Putih (100g)', calories: 130, protein: 2.7, fat: 0.3, carbs: 28.2, price: 2000 },
+  { id: '2', name: 'Ayam Goreng (50g)', calories: 120, protein: 10.5, fat: 8.1, carbs: 0, price: 8000 },
+  { id: '3', name: 'Telur Rebus (1 btr)', calories: 77, protein: 6.3, fat: 5.3, carbs: 0.6, price: 2500 },
+  { id: '4', name: 'Tahu Goreng (50g)', calories: 76, protein: 5.5, fat: 4.8, carbs: 1.9, price: 1500 },
+  { id: '5', name: 'Tempe Goreng (50g)', calories: 99, protein: 9.4, fat: 4.0, carbs: 8.5, price: 1500 },
+  { id: '6', name: 'Sayur Bayam (100g)', calories: 23, protein: 2.9, fat: 0.4, carbs: 3.6, price: 1000 },
 ];
 
 const DEFAULT_TARGETS: NutritionTargets = {
-  calories: 650,
-  protein: 20,
-  fat: 15,
-  carbs: 65,
+  calories: 600,
+  protein: 15,
+  fat: 10,
+  carbs: 50,
 };
 
 export default function Home() {
   const [foods, setFoods] = useState<FoodItem[]>(DEFAULT_FOODS);
   const [targets, setTargets] = useState<NutritionTargets>(DEFAULT_TARGETS);
-  const [maxBudget, setMaxBudget] = useState<number>(20000);
+  const [maxBudget, setMaxBudget] = useState<number>(15000);
   const [result, setResult] = useState<SimplexResult | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [hasOptimized, setHasOptimized] = useState<boolean>(false);
