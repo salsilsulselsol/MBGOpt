@@ -1,20 +1,25 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const jbMono = JetBrains_Mono({
+  variable: "--font-jb-mono",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "MBG Menu Optimizer - Optimasi Makan Bergizi Gratis",
-  description: "Optimasi komposisi bahan makanan program Makan Bergizi Gratis (MBG) untuk meminimalkan biaya katering menggunakan metode Simpleks Big-M.",
+  title: "MBG Optimizer — Optimasi Menu Makan Bergizi Gratis",
+  description:
+    "Aplikasi optimasi komposisi bahan makanan program Makan Bergizi Gratis (MBG) untuk meminimalkan biaya katering menggunakan Metode Simpleks Big-M.",
 };
 
 export default function RootLayout({
@@ -24,8 +29,8 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      lang="id"
+      className={`${jakarta.variable} ${jbMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

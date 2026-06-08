@@ -4,7 +4,11 @@ import { solveSimplex, FoodItem, NutritionTargets } from '@/lib/simplex';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { foods, targets } = body as { foods: FoodItem[]; targets: NutritionTargets };
+    const { foods, targets, maxBudget } = body as {
+      foods: FoodItem[];
+      targets: NutritionTargets;
+      maxBudget?: number;
+    };
 
     if (!foods || !Array.isArray(foods) || foods.length === 0) {
       return NextResponse.json(
@@ -20,7 +24,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = solveSimplex(foods, targets);
+    const result = solveSimplex(foods, targets, maxBudget);
 
     if (result.error) {
       return NextResponse.json(
